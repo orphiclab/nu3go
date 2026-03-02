@@ -70,7 +70,7 @@ export class ReportsService {
   }
 
   /** Export full report to Excel */
-  async exportReport(days = 30): Promise<Uint8Array> {
+  async exportReport(days = 30): Promise<ArrayBuffer> {
     const [summary, planDist, revTrend] = await Promise.all([
       this.getDashboard(),
       this.getPlanDistribution(),
@@ -100,6 +100,6 @@ export class ReportsService {
     planDist.forEach((p: any) => planSheet.addRow([p.type, p.count]));
     planSheet.getRow(1).font = { bold: true };
 
-    return wb.xlsx.writeBuffer() as Promise<Uint8Array>;
+    return (wb.xlsx.writeBuffer() as unknown) as Promise<ArrayBuffer>;
   }
 }

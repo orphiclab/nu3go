@@ -44,7 +44,7 @@ export class DeliveryService {
         return { message: 'Status updated.' };
     }
 
-    async exportExcel(date: string): Promise<Uint8Array> {
+    async exportExcel(date: string): Promise<ArrayBuffer> {
         const schedule = await this.getSchedule(date);
         const wb = new ExcelJS.Workbook();
         const ws = wb.addWorksheet(`Delivery ${date}`);
@@ -69,6 +69,6 @@ export class DeliveryService {
             ws.addRow({ num: i + 1, ...row });
         });
 
-        return wb.xlsx.writeBuffer() as Promise<Uint8Array>;
+        return (wb.xlsx.writeBuffer() as unknown) as Promise<ArrayBuffer>;
     }
 }
