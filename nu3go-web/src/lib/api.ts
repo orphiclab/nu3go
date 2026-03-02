@@ -46,18 +46,13 @@ api.interceptors.response.use(
     async (error) => {
         const original = error.config;
 
-        // ── Network error → activate demo mode ──
+        // ── Network error ──
         if (!error.response && original && typeof original.url === "string") {
-            DEMO_MODE = true;
-
-            const mock = getMockResponse(original.url);
-            if (mock !== null) {
-                console.info(`[nu3go demo] Serving mock for: ${original.url}`);
-                return mock;
-            }
-
-            // Return empty data shape for unknown endpoints
-            return { data: null, message: "Demo mode" };
+            // We previously activated DEMO_MODE automatically on network error here.
+            // Removed so it successfully attempts to reach the backend as requested by User.
+            console.error(`Network error reaching backend for: ${original.url}`);
+            // Return empty data shape for unknown endpoints instead of crashing the UI entirely
+            return { data: null, message: "Network error", error: true };
         }
 
         // ── 401 → try refresh token ──
