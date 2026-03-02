@@ -51,6 +51,37 @@ export class AdminController {
         return { data: { items }, meta: { total: parseInt(countResult.count), page: +page, limit: +limit } };
     }
 
+    @Post('users')
+    async createUser(@Body() body: any) {
+        const { email, fullName, phone, role } = body;
+
+        // Check if exists
+        const [existing] = await this.dataSource.query('SELECT id FROM users WHERE email = $1', [email]);
+        if (existing) {
+            return { statusCode: 400, message: 'Email already exists' };
+        }
+
+        // Extremely secure default password generation (usually replaced by an invite system)
+        const crypto = require('crypto');
+        const defaultPassword = crypto.randomBytes(8).toString('hex');
+
+        // Hash it reusing the auth service logic (which uses bcrypt)
+        const bcrypt = require('bcryptjs');
+        const hash = await bcrypt.hash(defaultPassword, 10);
+
+        const validRole = ['super_admin', 'admin', 'kitchen_staff', 'delivery_manager', 'corporate_admin', 'customer'].includes(role)
+            ? role
+            : 'customer';
+
+        const [result] = await this.dataSource.query(
+            `INSERT INTO users (email, password_hash, full_name, phone, role, is_active, is_verified) 
+             VALUES ($1, $2, $3, $4, $5, true, true) RETURNING id, email, full_name, role`,
+            [email, hash, fullName, phone || null, validRole]
+        );
+
+        return { message: 'User created successfully', user: result, tempPassword: defaultPassword };
+    }
+
     @Patch('users/:id')
     async updateUser(@Param('id') id: string, @Body() body: any) {
         const allowedFields = ['is_active', 'role', 'full_name', 'phone'];
