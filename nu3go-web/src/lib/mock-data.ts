@@ -214,7 +214,7 @@ export const MOCK_RESPONSES: Record<string, unknown> = {
     "/admin/credits": { data: mockAdminCredits },
     "/admin/overview": { data: mockReportsDashboard },
     "/delivery/schedule": { data: { items: mockDeliverySchedule }, meta: { total: mockDeliverySchedule.length } },
-    "/kitchen/summary": { data: mockKitchenSummary },
+    "/kitchen": { data: mockKitchenSummary },
     "/reports/analytics/dashboard": { data: mockReportsDashboard },
     "/reports/analytics/revenue": { data: mockRevenueTrend },
     "/reports/analytics/plan-distribution": { data: mockPlanDistribution },

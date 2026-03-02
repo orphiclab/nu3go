@@ -26,16 +26,13 @@ api.interceptors.request.use(
             // If we already know backend is offline, skip the real request
             if (DEMO_MODE && typeof config.url === "string") {
                 const mock = getMockResponse(config.url);
-                if (mock !== null) {
-                    // Cancel and resolve via adapter
-                    config.adapter = () => Promise.resolve({
-                        data: mock,
-                        status: 200,
-                        statusText: "OK (demo)",
-                        headers: {},
-                        config,
-                    });
-                }
+                config.adapter = () => Promise.resolve({
+                    data: mock !== null ? mock : { data: null, message: "Demo mode generic fallback" },
+                    status: 200,
+                    statusText: "OK (demo)",
+                    headers: {},
+                    config,
+                });
             }
         }
         return config;

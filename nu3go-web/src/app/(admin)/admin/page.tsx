@@ -5,32 +5,29 @@ import { KpiCard } from "@/components/dashboard/KpiCard";
 import api from "@/lib/api";
 import type { DashboardKpi } from "@/types";
 import { formatCurrency } from "@/lib/utils";
-import {
-    Users,
-    CreditCard,
-    Utensils,
-    Wallet,
-    TrendingUp,
-    Truck,
-    BarChart3,
-    ArrowRight,
-} from "lucide-react";
+import { ArrowRight, BarChart3, CreditCard, TrendingUp, Truck, Users, Utensils, Wallet } from "lucide-react";
 import Link from "next/link";
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 export default function AdminDashboardPage() {
     const [kpi, setKpi] = useState<DashboardKpi | null>(null);
+    const [rev, setRev] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        async function fetch() {
+        async function fetchAll() {
             try {
-                const res = await api.get<DashboardKpi>("/reports/analytics/dashboard");
-                setKpi((res as unknown as { data: DashboardKpi }).data);
+                const [kpiRes, revRes] = await Promise.all([
+                    api.get("/reports/analytics/dashboard"),
+                    api.get("/reports/analytics/revenue?days=14")
+                ]);
+                setKpi((kpiRes as any).data);
+                setRev((revRes as any).data ?? []);
             } finally {
                 setLoading(false);
             }
         }
-        fetch();
+        fetchAll();
     }, []);
 
     return (
@@ -116,6 +113,36 @@ export default function AdminDashboardPage() {
                     iconColor="blue"
                     loading={loading}
                 />
+            </div>
+
+            {/* Revenue Trend Chart */}
+            <div className="card">
+                <div className="flex items-center justify-between mb-5">
+                    <h2 className="text-base font-semibold text-neutral-800">Revenue Trend (Last 14 Days)</h2>
+                </div>
+                {loading ? (
+                    <div className="skeleton h-64 w-full rounded-lg" />
+                ) : rev.length === 0 ? (
+                    <div className="h-64 flex items-center justify-center border border-dashed border-border rounded-xl">
+                        <p className="text-sm text-neutral-400">No revenue data available</p>
+                    </div>
+                ) : (
+                    <ResponsiveContainer width="100%" height={250}>
+                        <AreaChart data={rev}>
+                            <defs>
+                                <linearGradient id="revGradMain" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
+                                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                                </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                            <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                            <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
+                            <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                            <Area type="monotone" dataKey="revenue" stroke="#22c55e" fill="url(#revGradMain)" strokeWidth={2} dot={false} />
+                        </AreaChart>
+                    </ResponsiveContainer>
+                )}
             </div>
 
             {/* Quick Action Cards */}
