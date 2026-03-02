@@ -46,9 +46,12 @@ import { NfcModule } from './modules/nfc/nfc.module';
                     config.get('NODE_ENV') === 'production'
                         ? { rejectUnauthorized: false }
                         : false,
+                retryAttempts: 10,
+                retryDelay: 3000,
                 extra: {
                     max: 20,
                     idleTimeoutMillis: 30000,
+                    connectionTimeoutMillis: 5000,
                 },
             }),
             inject: [ConfigService],
