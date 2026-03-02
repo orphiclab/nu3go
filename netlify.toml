@@ -1,0 +1,27 @@
+# ─── Netlify configuration for nu3go Next.js frontend ─────────────────────────
+
+[build]
+  base    = "nu3go-web"
+  command = "npm install && npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# ─── Redirects ─────────────────────────────────────────────────────────────────
+[[redirects]]
+  from   = "/api/*"
+  to     = "https://nu3go-api.onrender.com/v1/:splat"
+  status = 200
+
+# ─── Headers ───────────────────────────────────────────────────────────────────
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options        = "DENY"
+    X-XSS-Protection       = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy        = "strict-origin-when-cross-origin"

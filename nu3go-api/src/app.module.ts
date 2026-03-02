@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { HealthController } from './health.controller';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule } from '@nestjs/throttler';
@@ -100,5 +101,6 @@ import { NfcModule } from './modules/nfc/nfc.module';
         SchedulerModule,
         NfcModule,
     ],
+    controllers: [HealthController],
 })
 export class AppModule { }
