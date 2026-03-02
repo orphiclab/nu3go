@@ -162,9 +162,11 @@ export default function AdminSettingsPage() {
                                         <td className="font-mono text-xs text-neutral-700">{card.cardUid}</td>
                                         <td className="text-sm text-neutral-600">{card.label ?? "—"}</td>
                                         <td className="text-sm">
-                                            {card.userId
-                                                ? <span className="text-green-600 font-medium">{card.userId.slice(0, 8)}…</span>
-                                                : <span className="text-neutral-400">Unassigned</span>}
+                                            {card.userName
+                                                ? <span className="text-green-600 font-medium">{card.userName}</span>
+                                                : card.userId
+                                                    ? <span className="text-green-600 font-medium">{card.userId.slice(0, 8)}…</span>
+                                                    : <span className="text-neutral-400">Unassigned</span>}
                                         </td>
                                         <td>
                                             <span className={`badge text-xs ${card.isActive ? "badge-active" : "badge-expired"}`}>

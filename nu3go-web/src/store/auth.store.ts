@@ -72,9 +72,6 @@ export const useAuthStore = create<AuthState>()(
         }),
         {
             name: "nu3go-auth",
-            storage: createJSONStorage(() =>
-                typeof window !== "undefined" ? localStorage : sessionStorage
-            ),
             partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
         }
     )

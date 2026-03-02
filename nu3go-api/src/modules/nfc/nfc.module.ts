@@ -32,7 +32,14 @@ export class NfcService {
     ) { }
 
     findAll() {
-        return this.repo.find({ order: { createdAt: 'DESC' } });
+        return this.dataSource.query(`
+            SELECT c.id, c.card_uid as "cardUid", c.user_id as "userId", c.secret_hash as "secretHash", 
+                   c.is_active as "isActive", c.label, c.created_at as "createdAt", c.updated_at as "updatedAt",
+                   u.full_name as "userName"
+            FROM nfc_cards c
+            LEFT JOIN users u ON c.user_id = u.id
+            ORDER BY c.created_at DESC
+        `);
     }
 
     async findOne(id: string) {
