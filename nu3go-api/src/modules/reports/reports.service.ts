@@ -4,11 +4,11 @@ import * as ExcelJS from 'exceljs';
 
 @Injectable()
 export class ReportsService {
-    constructor(private readonly dataSource: DataSource) { }
+  constructor(private readonly dataSource: DataSource) { }
 
-    /** Dashboard overview KPIs */
-    async getDashboard() {
-        const [kpi] = await this.dataSource.query(`
+  /** Dashboard overview KPIs */
+  async getDashboard() {
+    const [kpi] = await this.dataSource.query(`
       SELECT
         (SELECT COUNT(*) FROM subscriptions WHERE status = 'active') as active_subscribers,
         (SELECT COUNT(*) FROM subscriptions WHERE status = 'active' AND auto_renew = true) as auto_renew_count,
@@ -20,18 +20,18 @@ export class ReportsService {
         ) FROM subscriptions WHERE status IN ('active', 'expired')) as renewal_rate_percent
     `);
 
-        return {
-            activeSubscribers: parseInt(kpi.active_subscribers),
-            totalRevenueLkr: parseFloat(kpi.total_revenue_lkr) || 0,
-            pickupToday: parseInt(kpi.pickup_today),
-            renewalRatePercent: parseFloat(kpi.renewal_rate_percent) || 0,
-        };
-    }
+    return {
+      activeSubscribers: parseInt(kpi.active_subscribers),
+      totalRevenueLkr: parseFloat(kpi.total_revenue_lkr) || 0,
+      pickupToday: parseInt(kpi.pickup_today),
+      renewalRatePercent: parseFloat(kpi.renewal_rate_percent) || 0,
+    };
+  }
 
-    /** Revenue trend over N days */
-    async getRevenueTrend(days = 30) {
-        const rows = await this.dataSource.query(
-            `SELECT
+  /** Revenue trend over N days */
+  async getRevenueTrend(days = 30) {
+    const rows = await this.dataSource.query(
+      `SELECT
          date_trunc('day', created_at)::date AS date,
          COALESCE(SUM(amount_lkr), 0) AS revenue,
          COUNT(DISTINCT pt.user_id) FILTER (
@@ -45,20 +45,20 @@ export class ReportsService {
          AND pt.created_at >= NOW() - ($1 || ' days')::interval
        GROUP BY 1
        ORDER BY 1`,
-            [days],
-        );
+      [days],
+    );
 
-        return rows.map((r: any) => ({
-            date: r.date,
-            revenue: parseFloat(r.revenue),
-            new: parseInt(r.new) || 0,
-            paused: parseInt(r.paused) || 0,
-        }));
-    }
+    return rows.map((r: any) => ({
+      date: r.date,
+      revenue: parseFloat(r.revenue),
+      new: parseInt(r.new) || 0,
+      paused: parseInt(r.paused) || 0,
+    }));
+  }
 
-    /** Active subscriptions by plan type */
-    async getPlanDistribution() {
-        const rows = await this.dataSource.query(`
+  /** Active subscriptions by plan type */
+  async getPlanDistribution() {
+    const rows = await this.dataSource.query(`
       SELECT p.type, COUNT(*) as count
       FROM subscriptions s
       JOIN plans p ON p.id = s.plan_id
@@ -66,40 +66,40 @@ export class ReportsService {
       GROUP BY p.type
     `);
 
-        return rows.map((r: any) => ({ type: r.type, count: parseInt(r.count) }));
-    }
+    return rows.map((r: any) => ({ type: r.type, count: parseInt(r.count) }));
+  }
 
-    /** Export full report to Excel */
-    async exportReport(days = 30): Promise<Buffer> {
-        const [summary, planDist, revTrend] = await Promise.all([
-            this.getDashboard(),
-            this.getPlanDistribution(),
-            this.getRevenueTrend(days),
-        ]);
+  /** Export full report to Excel */
+  async exportReport(days = 30): Promise<Uint8Array> {
+    const [summary, planDist, revTrend] = await Promise.all([
+      this.getDashboard(),
+      this.getPlanDistribution(),
+      this.getRevenueTrend(days),
+    ]);
 
-        const wb = new ExcelJS.Workbook();
+    const wb = new ExcelJS.Workbook();
 
-        // Summary sheet
-        const summarySheet = wb.addWorksheet('Summary');
-        summarySheet.addRow(['Metric', 'Value']);
-        summarySheet.addRow(['Active Subscribers', summary.activeSubscribers]);
-        summarySheet.addRow(['Monthly Revenue (LKR)', summary.totalRevenueLkr]);
-        summarySheet.addRow(['Renewal Rate (%)', summary.renewalRatePercent]);
-        summarySheet.addRow(['Total Pickups Today', summary.pickupToday]);
-        summarySheet.getRow(1).font = { bold: true };
+    // Summary sheet
+    const summarySheet = wb.addWorksheet('Summary');
+    summarySheet.addRow(['Metric', 'Value']);
+    summarySheet.addRow(['Active Subscribers', summary.activeSubscribers]);
+    summarySheet.addRow(['Monthly Revenue (LKR)', summary.totalRevenueLkr]);
+    summarySheet.addRow(['Renewal Rate (%)', summary.renewalRatePercent]);
+    summarySheet.addRow(['Total Pickups Today', summary.pickupToday]);
+    summarySheet.getRow(1).font = { bold: true };
 
-        // Revenue trend sheet
-        const revSheet = wb.addWorksheet('Revenue Trend');
-        revSheet.addRow(['Date', 'Revenue (LKR)', 'New Subs', 'Paused']);
-        revTrend.forEach((r: any) => revSheet.addRow([r.date, r.revenue, r.new, r.paused]));
-        revSheet.getRow(1).font = { bold: true };
+    // Revenue trend sheet
+    const revSheet = wb.addWorksheet('Revenue Trend');
+    revSheet.addRow(['Date', 'Revenue (LKR)', 'New Subs', 'Paused']);
+    revTrend.forEach((r: any) => revSheet.addRow([r.date, r.revenue, r.new, r.paused]));
+    revSheet.getRow(1).font = { bold: true };
 
-        // Plan distribution sheet
-        const planSheet = wb.addWorksheet('Plan Distribution');
-        planSheet.addRow(['Plan Type', 'Count']);
-        planDist.forEach((p: any) => planSheet.addRow([p.type, p.count]));
-        planSheet.getRow(1).font = { bold: true };
+    // Plan distribution sheet
+    const planSheet = wb.addWorksheet('Plan Distribution');
+    planSheet.addRow(['Plan Type', 'Count']);
+    planDist.forEach((p: any) => planSheet.addRow([p.type, p.count]));
+    planSheet.getRow(1).font = { bold: true };
 
-        return wb.xlsx.writeBuffer() as Promise<Buffer>;
-    }
+    return wb.xlsx.writeBuffer() as Promise<Uint8Array>;
+  }
 }
