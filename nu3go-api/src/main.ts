@@ -7,8 +7,16 @@ import { GlobalExceptionFilter } from './common/filters/global-exception.filter'
 
 async function bootstrap() {
     const logger = new Logger('Bootstrap');
+
+    // Debug: log env var presence (not values) on startup
+    logger.log(`NODE_ENV: ${process.env.NODE_ENV}`);
+    logger.log(`PORT: ${process.env.PORT}`);
+    logger.log(`DATABASE_URL set: ${!!process.env.DATABASE_URL}`);
+    logger.log(`REDIS_URL set: ${!!process.env.REDIS_URL}`);
+
     const app = await NestFactory.create(AppModule, {
         logger: ['error', 'warn', 'log', 'debug'],
+        abortOnError: false,
     });
 
     // Global prefix
@@ -16,7 +24,7 @@ async function bootstrap() {
 
     // CORS
     app.enableCors({
-        origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+        origin: process.env.FRONTEND_URL || '*',
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     });
@@ -25,7 +33,7 @@ async function bootstrap() {
     app.useGlobalPipes(
         new ValidationPipe({
             whitelist: true,
-            forbidNonWhitelisted: true,
+            forbidNonWhitelisted: false,
             transform: true,
             transformOptions: { enableImplicitConversion: true },
         }),
@@ -51,7 +59,7 @@ async function bootstrap() {
     }
 
     const port = process.env.PORT || 3001;
-    await app.listen(port);
+    await app.listen(port, '0.0.0.0');
     logger.log(`nu3go API running on port ${port}`);
 }
 
