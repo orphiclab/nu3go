@@ -10,7 +10,7 @@ async function seed() {
     console.log("Database connected. Seeding admin user...");
 
     const userRepo = AppDataSource.getRepository(User);
-    
+
     const existingAdmin = await userRepo.findOneBy({ email: ADMIN_EMAIL });
     if (existingAdmin) {
         console.log("Admin user already exists. Skipping seed.");
@@ -33,11 +33,15 @@ async function seed() {
     console.log("Admin user seeded successfully!");
     console.log(`Email: ${ADMIN_EMAIL}`);
     console.log(`Password: ${ADMIN_PASSWORD}`);
-    
+
     process.exit(0);
 }
 
 seed().catch((err) => {
-    console.error("Seeding failed: ", err);
+    console.error("=========================================");
+    console.error("SEEDING FAILED IN PRODUCTION:");
+    console.error(err);
+    if (err.stack) console.error(err.stack);
+    console.error("=========================================");
     process.exit(1);
 });

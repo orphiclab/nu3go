@@ -18,7 +18,7 @@
         "test:e2e": "jest --config ./test/jest-e2e.json",
         "migration:dev": "typeorm migration:run -d src/database/typeorm.config.ts",
         "migration:generate": "typeorm migration:generate -d src/database/typeorm.config.ts",
-        "migration:prod": "typeorm migration:run -d dist/database/typeorm.config.js",
+        "migration:prod": "npx typeorm migration:run -d dist/database/typeorm.config.js",
         "seed:admin": "npx ts-node -r tsconfig-paths/register scripts/seed-admin.ts"
     },
     "dependencies": {
