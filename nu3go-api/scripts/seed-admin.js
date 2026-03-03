@@ -1,39 +1,47 @@
-const { AppDataSource } = require('../dist/database/typeorm.config');
-const { User } = require('../dist/modules/users/entities/user.entity');
+const { DataSource } = require('typeorm');
 const bcrypt = require('bcryptjs');
 
 const ADMIN_EMAIL = 'admin@nu3go.lk';
 const ADMIN_PASSWORD = 'Admin@nu3go2024!';
 
 async function seed() {
-    await AppDataSource.initialize();
+    const ds = new DataSource({
+        type: 'postgres',
+        url: process.env.DATABASE_URL,
+        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    });
+
+    await ds.initialize();
     console.log("Database connected. Seeding admin user...");
 
-    const userRepo = AppDataSource.getRepository(User);
+    // Check if admin already exists
+    const existing = await ds.query(
+        `SELECT id FROM users WHERE email = $1`,
+        [ADMIN_EMAIL],
+    );
 
-    const existingAdmin = await userRepo.findOneBy({ email: ADMIN_EMAIL });
-    if (existingAdmin) {
+    if (existing.length > 0) {
         console.log("Admin user already exists. Skipping seed.");
+        await ds.destroy();
         process.exit(0);
     }
 
-    const salt = await bcrypt.genSalt(10);
+    const salt = await bcrypt.genSalt(12);
     const hashedPassword = await bcrypt.hash(ADMIN_PASSWORD, salt);
 
-    const admin = userRepo.create({
-        email: ADMIN_EMAIL,
-        password: hashedPassword,
-        fullName: 'nu3go Admin',
-        role: 'super_admin',
-        isActive: true,
-        isVerified: true,
-    });
+    const [admin] = await ds.query(
+        `INSERT INTO users (email, password_hash, full_name, phone, role, is_verified, is_active)
+         VALUES ($1, $2, $3, $4, 'super_admin', true, true)
+         RETURNING id, email, role`,
+        [ADMIN_EMAIL, hashedPassword, 'nu3go Admin', '+94771234567'],
+    );
 
-    await userRepo.save(admin);
     console.log("Admin user seeded successfully!");
     console.log(`Email: ${ADMIN_EMAIL}`);
     console.log(`Password: ${ADMIN_PASSWORD}`);
+    console.log(`Role: ${admin.role}`);
 
+    await ds.destroy();
     process.exit(0);
 }
 

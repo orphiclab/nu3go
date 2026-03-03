@@ -4,7 +4,7 @@
         "builder": "NIXPACKS"
     },
     "deploy": {
-        "startCommand": "npm run migration:run && npm run seed:admin && node dist/main",
+        "startCommand": "npm run migration:prod && node scripts/seed-admin.js && node dist/main",
         "restartPolicyType": "ON_FAILURE",
         "restartPolicyMaxRetries": 10
     }

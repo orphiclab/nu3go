@@ -2,7 +2,14 @@ import { DataSource } from 'typeorm';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
-dotenv.config({ path: path.resolve(__dirname, '../.env.development') });
+// Load the appropriate .env file based on NODE_ENV
+const envFile = process.env.NODE_ENV === 'production'
+    ? '.env.production'
+    : '.env.development';
+
+dotenv.config({ path: path.resolve(__dirname, `../../${envFile}`) });
+// Fallback: also try loading from parent directory (for compiled dist/)
+dotenv.config({ path: path.resolve(__dirname, `../${envFile}`) });
 
 export const AppDataSource = new DataSource({
     type: 'postgres',

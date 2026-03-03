@@ -49,7 +49,10 @@ export class User {
     @Column({ name: 'google_maps_link', nullable: true, type: 'text' })
     googleMapsLink: string;
 
-    @Column({ name: 'corporate_account_id', nullable: true })
+    @Column({ name: 'nfc_card_uid', nullable: true })
+    nfcCardUid: string;
+
+    @Column({ name: 'corporate_id', nullable: true })
     corporateAccountId: string;
 
     @CreateDateColumn({ name: 'created_at' })
