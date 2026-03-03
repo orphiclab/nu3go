@@ -61,6 +61,17 @@ async function bootstrap() {
     const port = process.env.PORT || 3001;
     await app.listen(port, '0.0.0.0');
     logger.log(`nu3go API running on port ${port}`);
+
+    // Run admin seeder automatically after DB is connected and migrated
+    try {
+        if (process.env.NODE_ENV === 'production') {
+            const { execSync } = require('child_process');
+            logger.log('Executing production seeder...');
+            execSync('node scripts/seed-admin.js', { stdio: 'inherit' });
+        }
+    } catch (e) {
+        logger.error('Failed to run seed script:', e);
+    }
 }
 
 bootstrap();

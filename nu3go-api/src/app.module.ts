@@ -41,6 +41,8 @@ import { NfcModule } from './modules/nfc/nfc.module';
                 url: config.get<string>('DATABASE_URL'),
                 autoLoadEntities: true,
                 synchronize: false,
+                migrationsRun: true,
+                migrations: [__dirname + '/database/migrations/*{.ts,.js}'],
                 logging: config.get('NODE_ENV') === 'development',
                 ssl:
                     config.get('NODE_ENV') === 'production'
