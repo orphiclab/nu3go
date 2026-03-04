@@ -1,14 +1,14 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class InitialSchema1000000000000 implements MigrationInterface {
-    name = 'InitialSchema1000000000000';
+  name = 'InitialSchema1000000000000';
 
-    async up(queryRunner: QueryRunner): Promise<void> {
-        // Enable UUID extension
-        await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`);
+  async up(queryRunner: QueryRunner): Promise<void> {
+    // Enable UUID extension
+    await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`);
 
-        // ─── Users ───────────────────────────────────────────────────────────────
-        await queryRunner.query(`
+    // ─── Users ───────────────────────────────────────────────────────────────
+    await queryRunner.query(`
       CREATE TYPE user_role AS ENUM (
         'super_admin','admin','kitchen_staff','delivery_manager',
         'corporate_admin','customer'
@@ -26,6 +26,7 @@ export class InitialSchema1000000000000 implements MigrationInterface {
         delivery_address TEXT,
         delivery_area   VARCHAR(100),
         delivery_notes  TEXT,
+        google_maps_link TEXT,
         nfc_card_uid    VARCHAR(64) UNIQUE,
         nfc_hmac_key    VARCHAR(128),
         corporate_id    UUID,
@@ -37,8 +38,8 @@ export class InitialSchema1000000000000 implements MigrationInterface {
       CREATE INDEX idx_users_corporate ON users(corporate_id) WHERE corporate_id IS NOT NULL;
     `);
 
-        // ─── Plans ────────────────────────────────────────────────────────────────
-        await queryRunner.query(`
+    // ─── Plans ────────────────────────────────────────────────────────────────
+    await queryRunner.query(`
       CREATE TYPE plan_type AS ENUM ('pickup','delivery','hybrid');
 
       CREATE TABLE plans (
@@ -63,8 +64,8 @@ export class InitialSchema1000000000000 implements MigrationInterface {
         ('Daily Delivery', 'daily-delivery', 'delivery', 5500, NULL, 30, '["Daily delivery","Free delivery","Scheduled before 8AM","WhatsApp updates"]');
     `);
 
-        // ─── Locations ───────────────────────────────────────────────────────────
-        await queryRunner.query(`
+    // ─── Locations ───────────────────────────────────────────────────────────
+    await queryRunner.query(`
       CREATE TABLE locations (
         id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         name        VARCHAR(100) NOT NULL,
@@ -84,8 +85,8 @@ export class InitialSchema1000000000000 implements MigrationInterface {
         ('Colombo 03', '10 Galle Road, Colombo 03', 'Colombo', 'Colombo 03', '07:30', '09:30');
     `);
 
-        // ─── Corporate Accounts ──────────────────────────────────────────────────
-        await queryRunner.query(`
+    // ─── Corporate Accounts ──────────────────────────────────────────────────
+    await queryRunner.query(`
       CREATE TABLE corporate_accounts (
         id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         company_name     VARCHAR(200) NOT NULL,
@@ -99,8 +100,8 @@ export class InitialSchema1000000000000 implements MigrationInterface {
       );
     `);
 
-        // ─── Subscriptions ───────────────────────────────────────────────────────
-        await queryRunner.query(`
+    // ─── Subscriptions ───────────────────────────────────────────────────────
+    await queryRunner.query(`
       CREATE TYPE subscription_status AS ENUM ('pending','active','paused','expired','cancelled');
       CREATE TYPE day_of_week AS ENUM ('monday','tuesday','wednesday','thursday','friday','saturday','sunday');
 
@@ -128,8 +129,8 @@ export class InitialSchema1000000000000 implements MigrationInterface {
       CREATE INDEX idx_subscriptions_end_date ON subscriptions(end_date) WHERE status = 'active';
     `);
 
-        // ─── Pause Logs ──────────────────────────────────────────────────────────
-        await queryRunner.query(`
+    // ─── Pause Logs ──────────────────────────────────────────────────────────
+    await queryRunner.query(`
       CREATE TABLE pause_logs (
         id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         subscription_id UUID NOT NULL REFERENCES subscriptions(id),
@@ -141,8 +142,8 @@ export class InitialSchema1000000000000 implements MigrationInterface {
       );
     `);
 
-        // ─── Meal Logs ───────────────────────────────────────────────────────────
-        await queryRunner.query(`
+    // ─── Meal Logs ───────────────────────────────────────────────────────────
+    await queryRunner.query(`
       CREATE TYPE pickup_method AS ENUM ('nfc','qr','manual','delivery');
 
       CREATE TABLE meal_logs (
@@ -164,8 +165,8 @@ export class InitialSchema1000000000000 implements MigrationInterface {
       CREATE INDEX idx_meal_logs_date ON meal_logs(meal_date);
     `);
 
-        // ─── Delivery Logs ───────────────────────────────────────────────────────
-        await queryRunner.query(`
+    // ─── Delivery Logs ───────────────────────────────────────────────────────
+    await queryRunner.query(`
       CREATE TABLE delivery_logs (
         id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         meal_log_id UUID UNIQUE REFERENCES meal_logs(id),
@@ -174,8 +175,8 @@ export class InitialSchema1000000000000 implements MigrationInterface {
       );
     `);
 
-        // ─── Credit Wallets & Transactions ───────────────────────────────────────
-        await queryRunner.query(`
+    // ─── Credit Wallets & Transactions ───────────────────────────────────────
+    await queryRunner.query(`
       CREATE TYPE credit_type AS ENUM ('earn','redeem','expire','holiday','admin_adjustment');
 
       CREATE TABLE credit_wallets (
@@ -201,8 +202,8 @@ export class InitialSchema1000000000000 implements MigrationInterface {
       CREATE INDEX idx_credit_tx_user ON credit_transactions(user_id, created_at DESC);
     `);
 
-        // ─── Payment Transactions ────────────────────────────────────────────────
-        await queryRunner.query(`
+    // ─── Payment Transactions ────────────────────────────────────────────────
+    await queryRunner.query(`
       CREATE TABLE payment_transactions (
         id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         user_id         UUID NOT NULL REFERENCES users(id),
@@ -220,8 +221,8 @@ export class InitialSchema1000000000000 implements MigrationInterface {
       CREATE INDEX idx_payment_tx_user ON payment_transactions(user_id, created_at DESC);
     `);
 
-        // ─── Menu Items ──────────────────────────────────────────────────────────
-        await queryRunner.query(`
+    // ─── Menu Items ──────────────────────────────────────────────────────────
+    await queryRunner.query(`
       CREATE TABLE menu_items (
         id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         name        VARCHAR(200) NOT NULL,
@@ -237,17 +238,17 @@ export class InitialSchema1000000000000 implements MigrationInterface {
       );
     `);
 
-        // ─── Kitchen Print Logs ──────────────────────────────────────────────────
-        await queryRunner.query(`
+    // ─── Kitchen Print Logs ──────────────────────────────────────────────────
+    await queryRunner.query(`
       CREATE TABLE kitchen_print_logs (
         date        DATE PRIMARY KEY,
         printed_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );
     `);
-    }
+  }
 
-    async down(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`
+  async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`
       DROP TABLE IF EXISTS kitchen_print_logs CASCADE;
       DROP TABLE IF EXISTS menu_items CASCADE;
       DROP TABLE IF EXISTS payment_transactions CASCADE;
@@ -268,5 +269,5 @@ export class InitialSchema1000000000000 implements MigrationInterface {
       DROP TYPE IF EXISTS plan_type CASCADE;
       DROP TYPE IF EXISTS user_role CASCADE;
     `);
-    }
+  }
 }
