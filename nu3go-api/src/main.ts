@@ -63,4 +63,7 @@ async function bootstrap() {
     logger.log(`nu3go API running on port ${port}`);
 }
 
-bootstrap();
+bootstrap().catch((err) => {
+    console.error('❌ Bootstrap failed:', err);
+    process.exit(1);
+});

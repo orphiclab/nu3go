@@ -1,4 +1,4 @@
-import { Module, Logger } from '@nestjs/common';
+import { Module, Logger, Global } from '@nestjs/common';
 import { HealthController } from './health.controller';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -27,8 +27,21 @@ import { NfcModule } from './modules/nfc/nfc.module';
 
 const logger = new Logger('AppModule');
 
-// Only load Redis if REDIS_URL is configured; otherwise provide a safe stub
-const redisImport = process.env.REDIS_URL
+/**
+ * When REDIS_URL is not configured we still need the DI token
+ * that @InjectRedis() / @Inject('IORedisModuleConnectionToken') resolves to.
+ * This tiny global module provides a null value for that token so
+ * @Optional() injections receive null instead of crashing.
+ */
+@Global()
+@Module({
+    providers: [{ provide: 'IORedisModuleConnectionToken', useValue: null }],
+    exports: ['IORedisModuleConnectionToken'],
+})
+class RedisStubModule { }
+
+// Choose real Redis or the null-stub
+const redisImports = process.env.REDIS_URL
     ? [
         RedisModule.forRootAsync({
             imports: [ConfigModule],
@@ -41,7 +54,7 @@ const redisImport = process.env.REDIS_URL
     ]
     : (() => {
         logger.warn('REDIS_URL not set — Redis features (OTP, caching) disabled');
-        return [];
+        return [RedisStubModule];
     })();
 
 @Module({
@@ -77,7 +90,7 @@ const redisImport = process.env.REDIS_URL
         }),
 
         // Redis (for OTP, distributed locks, caching) — skipped when REDIS_URL not set
-        ...redisImport,
+        ...redisImports,
 
         // Rate Limiting
         ThrottlerModule.forRoot([
