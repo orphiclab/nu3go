@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, Logger } from '@nestjs/common';
 import { HealthController } from './health.controller';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -24,6 +24,25 @@ import { CorporateModule } from './modules/corporate/corporate.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { SchedulerModule } from './modules/scheduler/scheduler.module';
 import { NfcModule } from './modules/nfc/nfc.module';
+
+const logger = new Logger('AppModule');
+
+// Only load Redis if REDIS_URL is configured; otherwise provide a safe stub
+const redisImport = process.env.REDIS_URL
+    ? [
+        RedisModule.forRootAsync({
+            imports: [ConfigModule],
+            useFactory: (config: ConfigService) => ({
+                type: 'single' as const,
+                url: config.get<string>('REDIS_URL'),
+            }),
+            inject: [ConfigService],
+        }),
+    ]
+    : (() => {
+        logger.warn('REDIS_URL not set — Redis features (OTP, caching) disabled');
+        return [];
+    })();
 
 @Module({
     imports: [
@@ -57,15 +76,8 @@ import { NfcModule } from './modules/nfc/nfc.module';
             inject: [ConfigService],
         }),
 
-        // Redis (for OTP, distributed locks, caching)
-        RedisModule.forRootAsync({
-            imports: [ConfigModule],
-            useFactory: (config: ConfigService) => ({
-                type: 'single',
-                url: config.get<string>('REDIS_URL', 'redis://localhost:6379'),
-            }),
-            inject: [ConfigService],
-        }),
+        // Redis (for OTP, distributed locks, caching) — skipped when REDIS_URL not set
+        ...redisImport,
 
         // Rate Limiting
         ThrottlerModule.forRoot([

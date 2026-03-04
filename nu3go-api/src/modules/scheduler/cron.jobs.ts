@@ -1,7 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional, Inject } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { DataSource } from 'typeorm';
-import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
 
 /**
@@ -14,7 +13,7 @@ export class PauseCreditCron {
 
     constructor(
         private readonly dataSource: DataSource,
-        @InjectRedis() private readonly redis: Redis,
+        @Optional() @Inject('IORedisModuleConnectionToken') private readonly redis: Redis | null,
     ) { }
 
     @Cron('0 2 * * *', { name: 'pause_credit_cron', timeZone: 'Asia/Colombo' })

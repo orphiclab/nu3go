@@ -4,11 +4,13 @@ import {
     ConflictException,
     NotFoundException,
     BadRequestException,
+    Optional,
+    Inject,
+    Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
 import * as bcrypt from 'bcryptjs';
 import { User } from '../users/entities/user.entity';
@@ -16,13 +18,19 @@ import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class AuthService {
+    private readonly logger = new Logger(AuthService.name);
+
     constructor(
         @InjectRepository(User)
         private readonly userRepo: Repository<User>,
         private readonly jwtService: JwtService,
-        @InjectRedis() private readonly redis: Redis,
+        @Optional() @Inject('IORedisModuleConnectionToken') private readonly redis: Redis | null,
         private readonly notificationsService: NotificationsService,
-    ) { }
+    ) {
+        if (!this.redis) {
+            this.logger.warn('Redis not available — OTP features will be disabled');
+        }
+    }
 
     async register(dto: {
         email: string;
@@ -55,7 +63,9 @@ export class AuthService {
 
         // Generate 6-digit OTP and store in Redis (10 minutes)
         const otp = this.generateOtp();
-        await this.redis.setex(`otp:${user.email}`, 600, otp);
+        if (this.redis) {
+            await this.redis.setex(`otp:${user.email}`, 600, otp);
+        }
 
         // Send OTP via email
         try {
@@ -71,6 +81,9 @@ export class AuthService {
     }
 
     async verifyOtp(dto: { email: string; otp: string }) {
+        if (!this.redis) {
+            throw new BadRequestException({ code: 'REDIS_UNAVAILABLE', message: 'OTP service is temporarily unavailable.' });
+        }
         const storedOtp = await this.redis.get(`otp:${dto.email.toLowerCase()}`);
 
         if (!storedOtp) {
@@ -95,12 +108,17 @@ export class AuthService {
 
         // Mark verified + delete OTP
         await this.userRepo.update(user.id, { isVerified: true });
-        await this.redis.del(`otp:${dto.email.toLowerCase()}`);
+        if (this.redis) {
+            await this.redis.del(`otp:${dto.email.toLowerCase()}`);
+        }
 
         return this.generateTokens(user);
     }
 
     async resendOtp(email: string) {
+        if (!this.redis) {
+            throw new BadRequestException({ code: 'REDIS_UNAVAILABLE', message: 'OTP service is temporarily unavailable.' });
+        }
         const normalizedEmail = email.toLowerCase();
 
         // Rate-limit: only allow resend once every 60 seconds
