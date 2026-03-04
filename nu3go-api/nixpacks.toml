@@ -1,6 +1,6 @@
 # ─── Nixpacks config for Railway ─────────────────────────────────────────────
 [phases.setup]
-nixPkgs = ["nodejs_20"]
+nixPkgs = ["nodejs_20", "npm"]
 
 [phases.install]
 cmds = ["npm install --legacy-peer-deps"]
@@ -9,4 +9,4 @@ cmds = ["npm install --legacy-peer-deps"]
 cmds = ["npm run build"]
 
 [start]
-cmd = "npm run start:prod"
+cmd = "npx typeorm migration:run -d dist/database/typeorm.config.js && node scripts/seed-admin.js && node dist/main"
