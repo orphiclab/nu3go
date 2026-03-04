@@ -13,7 +13,7 @@ export class PauseCreditCron {
 
     constructor(
         private readonly dataSource: DataSource,
-        @Optional() @Inject('IORedisModuleConnectionToken') private readonly redis: Redis | null,
+        @Optional() @Inject('default_IORedisModuleConnectionToken') private readonly redis: Redis | null,
     ) { }
 
     @Cron('0 2 * * *', { name: 'pause_credit_cron', timeZone: 'Asia/Colombo' })

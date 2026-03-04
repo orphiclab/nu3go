@@ -4,10 +4,12 @@ import {
     ConflictException,
     UnauthorizedException,
     ForbiddenException,
+    Optional,
+    Inject,
+    Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
-import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
 import * as crypto from 'crypto';
 import { JwtService } from '@nestjs/jwt';
@@ -25,11 +27,17 @@ import { JwtService } from '@nestjs/jwt';
  */
 @Injectable()
 export class PickupService {
+    private readonly logger = new Logger(PickupService.name);
+
     constructor(
         private readonly dataSource: DataSource,
         private readonly jwtService: JwtService,
-        @InjectRedis() private readonly redis: Redis,
-    ) { }
+        @Optional() @Inject('default_IORedisModuleConnectionToken') private readonly redis: Redis | null,
+    ) {
+        if (!this.redis) {
+            this.logger.warn('Redis not available — distributed locks disabled, using DB-only dedup');
+        }
+    }
 
     // ─── NFC Validation ─────────────────────────────────────────
     async validateNfc(token: string): Promise<{
@@ -186,12 +194,15 @@ export class PickupService {
         const lockKey = `meal_lock:${userId}:${today}`;
 
         // ─── Redis distributed lock (SETNX pattern) ────
-        const lockAcquired = await this.redis.set(lockKey, '1', 'EX', 30, 'NX');
-        if (!lockAcquired) {
-            throw new ConflictException({
-                code: 'MEAL_ALREADY_USED',
-                message: 'You have already picked up your meal today.',
-            });
+        // When Redis is unavailable, skip the lock and rely on DB unique constraint
+        if (this.redis) {
+            const lockAcquired = await this.redis.set(lockKey, '1', 'EX', 30, 'NX');
+            if (!lockAcquired) {
+                throw new ConflictException({
+                    code: 'MEAL_ALREADY_USED',
+                    message: 'You have already picked up your meal today.',
+                });
+            }
         }
 
         try {
@@ -276,8 +287,10 @@ export class PickupService {
                 message: 'Enjoy your breakfast! ✓',
             };
         } finally {
-            // Always release the lock
-            await this.redis.del(lockKey);
+            // Always release the lock (if Redis available)
+            if (this.redis) {
+                await this.redis.del(lockKey);
+            }
         }
     }
 }

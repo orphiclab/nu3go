@@ -24,7 +24,7 @@ export class AuthService {
         @InjectRepository(User)
         private readonly userRepo: Repository<User>,
         private readonly jwtService: JwtService,
-        @Optional() @Inject('IORedisModuleConnectionToken') private readonly redis: Redis | null,
+        @Optional() @Inject('default_IORedisModuleConnectionToken') private readonly redis: Redis | null,
         private readonly notificationsService: NotificationsService,
     ) {
         if (!this.redis) {

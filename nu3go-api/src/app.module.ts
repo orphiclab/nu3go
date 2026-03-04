@@ -35,8 +35,8 @@ const logger = new Logger('AppModule');
  */
 @Global()
 @Module({
-    providers: [{ provide: 'IORedisModuleConnectionToken', useValue: null }],
-    exports: ['IORedisModuleConnectionToken'],
+    providers: [{ provide: 'default_IORedisModuleConnectionToken', useValue: null }],
+    exports: ['default_IORedisModuleConnectionToken'],
 })
 class RedisStubModule { }
 
