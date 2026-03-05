@@ -26,7 +26,6 @@ export class InitialSchema1000000000000 implements MigrationInterface {
         delivery_address TEXT,
         delivery_area   VARCHAR(100),
         delivery_notes  TEXT,
-        google_maps_link TEXT,
         nfc_card_uid    VARCHAR(64) UNIQUE,
         nfc_hmac_key    VARCHAR(128),
         corporate_id    UUID,
