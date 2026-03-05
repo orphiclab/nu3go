@@ -1,14 +1,13 @@
 #!/bin/sh
-set -e
 
 echo "=== Applying schema patches ==="
-node scripts/patch-schema.js 2>&1 || echo "Schema patch warning (non-fatal)"
+node scripts/patch-schema.js || echo "[WARN] Schema patch had issues (non-fatal)"
 
 echo "=== Running migrations ==="
-npx typeorm migration:run -d dist/database/typeorm.config.js 2>&1 || echo "Migration warning (non-fatal)"
+npx typeorm migration:run -d dist/database/typeorm.config.js || echo "[WARN] Migrations had issues (non-fatal)"
 
 echo "=== Seeding admin user ==="
-node scripts/seed-admin.js 2>&1 || echo "Seed warning (non-fatal)"
+node scripts/seed-admin.js || echo "[WARN] Seed had issues (non-fatal)"
 
 echo "=== Starting nu3go API ==="
 exec node dist/main
