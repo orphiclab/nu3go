@@ -25,4 +25,10 @@ async function patchSchema() {
     }
 }
 
-patchSchema();
+patchSchema().then(() => {
+    console.log('  Schema patch complete');
+    process.exit(0);
+}).catch((e) => {
+    console.error('  Schema patch failed:', e.message);
+    process.exit(1);
+});
