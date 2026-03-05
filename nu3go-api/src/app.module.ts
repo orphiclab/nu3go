@@ -72,7 +72,7 @@ const redisImports = process.env.REDIS_URL
                 type: 'postgres',
                 url: config.get<string>('DATABASE_URL'),
                 autoLoadEntities: true,
-                synchronize: false,
+                synchronize: true,
                 logging: config.get('NODE_ENV') === 'development',
                 ssl:
                     config.get('NODE_ENV') === 'production'
